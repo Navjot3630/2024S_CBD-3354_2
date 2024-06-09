@@ -40,7 +40,7 @@ def upload_to_database():
         return jsonify({'message': 'Data uploaded successfully'}), 200
     except psycopg2.Error as e:
         conn.rollback()
-        return jsonify({'error': 'Failed to upload data to database', 'details': str(e)}), 500
+        return jsonify({'error': 'Failed to upload data to database.Please try again', 'details': str(e)}), 500
     finally:
         cur.close()
         conn.close()
