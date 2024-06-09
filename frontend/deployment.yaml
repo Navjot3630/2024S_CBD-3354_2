@@ -4,7 +4,7 @@ metadata:
   name: frontend-deployment
   namespace: frontend
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: frontend
@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
       - name: frontend-container
-        image: gcr.io/project897927/frontend:latest
+      -image: gcr.io/project897927/frontend:latest
       imagePullSecrets:
       - name: gcr-json-key
