@@ -15,45 +15,46 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/project897927/backend:$SHORT_SHA']
 
-  # Set up the GKE cluster (Autopilot mode)
+  # Set up the GKE cluster in Autopilot mode
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'container'
       - 'clusters'
       - 'create-auto'
-      - 'your-autopilot-cluster'
-      - '--region'
-      - 'your-region'
+      - 'cluster897927'  # Replace with your desired cluster name
+      - '--region=us-central1-a'    # Replace with your desired region
     waitFor:
       - '-'
+
+
 
   # Deploy the frontend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'frontend/deployment.yaml']
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=your-region'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=your-autopilot-cluster'
+      - 'CLOUDSDK_COMPUTE_REGION=us-central1-a'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=cluster897927'
 
   # Deploy the backend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'backend/deployment.yaml']
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=your-region'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=your-autopilot-cluster'
+      - 'CLOUDSDK_COMPUTE_REGION=us-central1-a'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=897927cluster'
 
   # Expose the frontend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'frontend/service.yaml']
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=your-region'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=your-autopilot-cluster'
+      - 'CLOUDSDK_COMPUTE_REGION=us-central1-a'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=897927cluster'
 
   # Expose the backend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'backend/service.yaml']
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=your-region'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=your-autopilot-cluster'
+      - 'CLOUDSDK_COMPUTE_REGION=us-central1-a'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=cluster897927'
 
 images:
   - 'gcr.io/project897927/frontend:$SHORT_SHA'
