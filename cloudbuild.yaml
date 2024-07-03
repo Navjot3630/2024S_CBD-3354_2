@@ -59,4 +59,3 @@ steps:
 images:
   - 'gcr.io/project897927/frontend:$SHORT_SHA'
   - 'gcr.io/project897927/backend:$SHORT_SHA'
-  
