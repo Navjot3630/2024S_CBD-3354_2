@@ -1,20 +1,23 @@
 steps:
-  # Activate the service account
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
-    id: 'activate-service-account'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        gcloud auth activate-service-account --key-file $GCP_SERVICE_ACCOUNT_KEY
-        gcloud config set project $GCP_PROJECT_ID
-        gcloud config set compute/zone $GCP_ZONE
- 
+  # Build Docker image for the frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/project897927/frontend:$SHORT_SHA', './frontend']
+
+  # Build Docker image for the backend
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/project897927/backend:$SHORT_SHA', './backend']
+
+  # Push the frontend image to GCR
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/project897927/frontend:$SHORT_SHA']
+
+  # Push the backend image to GCR
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/project897927/backend:$SHORT_SHA']
+
   # Fetch credentials for the existing GKE cluster
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
-    id: 'fetch-gke-credentials'
+  - name: 'gcr.io/cloud-builders/gcloud'
     args:
-      - 'gcloud'
       - 'container'
       - 'clusters'
       - 'get-credentials'
@@ -22,33 +25,8 @@ steps:
       - '--region=us-central1'
     env:
       - 'CLOUDSDK_COMPUTE_REGION=us-central1'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
     waitFor:
-      - 'activate-service-account'
-
-  # Build Docker image for the frontend
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/project897927/frontend:$SHORT_SHA', './frontend']
-    waitFor:
-      - 'fetch-gke-credentials'
-
-  # Build Docker image for the backend
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/project897927/backend:$SHORT_SHA', './backend']
-    waitFor:
-      - 'fetch-gke-credentials'
-
-  # Push the frontend image to GCR
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/project897927/frontend:$SHORT_SHA']
-    waitFor:
-      - 'build-frontend'
-
-  # Push the backend image to GCR
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/project897927/backend:$SHORT_SHA']
-    waitFor:
-      - 'build-backend'
+      - '-'
 
   # Deploy the frontend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
@@ -56,8 +34,6 @@ steps:
     env:
       - 'CLOUDSDK_COMPUTE_REGION=us-central1'
       - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
-    waitFor:
-      - 'push-frontend'
 
   # Deploy the backend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
@@ -65,8 +41,6 @@ steps:
     env:
       - 'CLOUDSDK_COMPUTE_REGION=us-central1'
       - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
-    waitFor:
-      - 'push-backend'
 
   # Expose the frontend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
@@ -74,8 +48,6 @@ steps:
     env:
       - 'CLOUDSDK_COMPUTE_REGION=us-central1'
       - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
-    waitFor:
-      - 'deploy-frontend'
 
   # Expose the backend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
@@ -83,10 +55,7 @@ steps:
     env:
       - 'CLOUDSDK_COMPUTE_REGION=us-central1'
       - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
-    waitFor:
-      - 'deploy-backend'
 
 images:
   - 'gcr.io/project897927/frontend:$SHORT_SHA'
   - 'gcr.io/project897927/backend:$SHORT_SHA'
-
