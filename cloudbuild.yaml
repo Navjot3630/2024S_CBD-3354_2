@@ -1,4 +1,12 @@
 steps:
+  # Set the service account for the build process
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'config'
+      - 'set'
+      - 'core/account'
+      - 'gke-cluster-admin@project897927.iam.gserviceaccount.com'
+      
   # Build Docker image for the frontend
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/project897927/frontend:$SHORT_SHA', './frontend']
@@ -15,50 +23,47 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/project897927/backend:$SHORT_SHA']
 
-   # Fetch credentials for the existing GKE cluster
+  # Fetch credentials for the existing GKE cluster
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'container'
       - 'clusters'
       - 'get-credentials'
-      - 'chatapp'  # Your existing GKE cluster name
-      - '--region=us-central1'  # Your existing region
+      - 'chatapp'
+      - '--region=us-central1'
     env:
       - 'CLOUDSDK_COMPUTE_REGION=us-central1'
     waitFor:
       - '-'
 
-
-
   # Deploy the frontend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'frontend/deployment.yaml']
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=us-central1-a'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=cluster897927'
+      - 'CLOUDSDK_COMPUTE_REGION=us-central1'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
 
   # Deploy the backend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'backend/deployment.yaml']
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=us-central1-a'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=897927cluster'
+      - 'CLOUDSDK_COMPUTE_REGION=us-central1'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
 
   # Expose the frontend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'frontend/service.yaml']
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=us-central1-a'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=897927cluster'
+      - 'CLOUDSDK_COMPUTE_REGION=us-central1'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
 
   # Expose the backend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'backend/service.yaml']
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=us-central1-a'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=cluster897927'
+      - 'CLOUDSDK_COMPUTE_REGION=us-central1'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
 
 images:
   - 'gcr.io/project897927/frontend:$SHORT_SHA'
   - 'gcr.io/project897927/backend:$SHORT_SHA'
-  
