@@ -1,3 +1,5 @@
+logsBucket: gs://bucket897927 # Replace 'your-logs-bucket' with your actual bucket name
+
 steps:
   # Build Docker image for the frontend
   - name: 'gcr.io/cloud-builders/docker'
