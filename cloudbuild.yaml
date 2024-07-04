@@ -6,22 +6,27 @@ steps:
       - 'set'
       - 'core/account'
       - 'gke-cluster-admin@project897927.iam.gserviceaccount.com'
-      
+    serviceAccount: 'gke-cluster-admin@project897927.iam.gserviceaccount.com'
+
   # Build Docker image for the frontend
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/project897927/frontend:$SHORT_SHA', './frontend']
+    serviceAccount: 'gke-cluster-admin@project897927.iam.gserviceaccount.com'
 
   # Build Docker image for the backend
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/project897927/backend:$SHORT_SHA', './backend']
+    serviceAccount: 'gke-cluster-admin@project897927.iam.gserviceaccount.com'
 
   # Push the frontend image to GCR
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/project897927/frontend:$SHORT_SHA']
+    serviceAccount: 'gke-cluster-admin@project897927.iam.gserviceaccount.com'
 
   # Push the backend image to GCR
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/project897927/backend:$SHORT_SHA']
+    serviceAccount: 'gke-cluster-admin@project897927.iam.gserviceaccount.com'
 
   # Fetch credentials for the existing GKE cluster
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -33,6 +38,7 @@ steps:
       - '--region=us-central1'
     env:
       - 'CLOUDSDK_COMPUTE_REGION=us-central1'
+    serviceAccount: 'gke-cluster-admin@project897927.iam.gserviceaccount.com'
     waitFor:
       - '-'
 
@@ -42,6 +48,7 @@ steps:
     env:
       - 'CLOUDSDK_COMPUTE_REGION=us-central1'
       - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
+    serviceAccount: 'gke-cluster-admin@project897927.iam.gserviceaccount.com'
 
   # Deploy the backend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
@@ -49,6 +56,7 @@ steps:
     env:
       - 'CLOUDSDK_COMPUTE_REGION=us-central1'
       - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
+    serviceAccount: 'gke-cluster-admin@project897927.iam.gserviceaccount.com'
 
   # Expose the frontend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
@@ -56,6 +64,7 @@ steps:
     env:
       - 'CLOUDSDK_COMPUTE_REGION=us-central1'
       - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
+    serviceAccount: 'gke-cluster-admin@project897927.iam.gserviceaccount.com'
 
   # Expose the backend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
@@ -63,6 +72,7 @@ steps:
     env:
       - 'CLOUDSDK_COMPUTE_REGION=us-central1'
       - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
+    serviceAccount: 'gke-cluster-admin@project897927.iam.gserviceaccount.com'
 
 images:
   - 'gcr.io/project897927/frontend:$SHORT_SHA'
