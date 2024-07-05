@@ -3,19 +3,19 @@ logsBucket: gs://bucket897927 # Replace 'your-logs-bucket' with your actual buck
 steps:
   # Build Docker image for the frontend
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/project897927/frontend:$SHORT_SHA', './frontend']
+    args: ['build', '-t', 'gcr.io/project897927/frontend:latest', './frontend']
 
   # Build Docker image for the backend
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/project897927/backend:$SHORT_SHA', './backend']
+    args: ['build', '-t', 'gcr.io/project897927/backend:latest', './backend']
 
   # Push the frontend image to GCR
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/project897927/frontend:$SHORT_SHA']
+    args: ['push', 'gcr.io/project897927/frontend:latest']
 
   # Push the backend image to GCR
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/project897927/backend:$SHORT_SHA']
+    args: ['push', 'gcr.io/project897927/backend:latest']
 
   # Fetch credentials for the existing GKE cluster
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -59,6 +59,6 @@ steps:
       - 'CLOUDSDK_CONTAINER_CLUSTER=chatapp'
 
 images:
-  - 'gcr.io/project897927/frontend:$SHORT_SHA'
-  - 'gcr.io/project897927/backend:$SHORT_SHA'
+  - 'gcr.io/project897927/frontend:latest'
+  - 'gcr.io/project897927/backend:latest'
   
