@@ -16,4 +16,3 @@ spec:
       containers:
       - name: backend-container
         image: gcr.io/project897927/backend:latest
-       
