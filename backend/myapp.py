@@ -35,7 +35,7 @@ def upload_to_database():
     
     cur = conn.cursor()
     try:
-        cur.execute("INSERT INTO users (name, address) VALUES (%s, %s)", (name, address))
+        cur.execute("INSERT INTO info (name, address) VALUES (%s, %s)", (name, address))
         conn.commit()
         return jsonify({'message': 'Data uploaded successfully'}), 200
     except psycopg2.Error as e:
