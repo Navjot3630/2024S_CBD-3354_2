@@ -1,18 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend-deployment
-  namespace: frontend
+  name: backend-deployment
+  namespace: backend
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: frontend
+      app: backend
   template:
     metadata:
       labels:
-        app: frontend
+        app: backend
     spec:
       containers:
-      - name: frontend-container
-        image: gcr.io/project897927/frontend:latest
+      - name: backend-container
+        image: gcr.io/project897927/backend:latest
+       
