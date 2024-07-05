@@ -41,6 +41,3 @@ spec:
               key: DB_PASSWORD
       imagePullSecrets:
       - name: gcr-json-key
-      restartPolicy: Always  # Ensures the container is always restarted on failure
-      readinessGates:
-      - conditionType: PodScheduled  # Ensures the pod is scheduled before reporting readiness
