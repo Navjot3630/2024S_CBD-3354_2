@@ -15,6 +15,4 @@ spec:
     spec:
       containers:
       - name: frontend-container
-      -image: gcr.io/project897927/frontend:latest
-      imagePullSecrets:
-      - name: gcr-json-key
+        image: gcr.io/project897927/frontend:latest
