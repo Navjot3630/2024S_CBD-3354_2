@@ -16,6 +16,8 @@ spec:
       containers:
       - name: backend-container
         image: gcr.io/project897927/backend:latest
+        ports:
+        - containerPort: 5000  # Ensure the container port matches the port your Flask app listens on
         env:
         - name: DB_HOST
           valueFrom:
@@ -39,3 +41,6 @@ spec:
               key: DB_PASSWORD
       imagePullSecrets:
       - name: gcr-json-key
+      restartPolicy: Always  # Ensures the container is always restarted on failure
+      readinessGates:
+      - conditionType: PodScheduled  # Ensures the pod is scheduled before reporting readiness
