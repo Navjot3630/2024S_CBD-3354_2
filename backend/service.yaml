@@ -10,4 +10,4 @@ spec:
     - protocol: TCP
       port: 80  # The port that the service exposes
       targetPort: 5000  # The port on the backend Pods
-  type: ClusterIP  # Default type, no need to change
+  type: LoadBalancer # Default type, no need to change
