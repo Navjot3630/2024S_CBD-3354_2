@@ -83,8 +83,8 @@
             formData.append("name", document.getElementById("name").value);
             formData.append("address", document.getElementById("address").value);
 
-            fetch("http://backend-service.backend.svc.cluster.local
-", {
+            fetch("http://34.41.210.243:80",
+                  {
                 method: "POST",
                 body: formData,
             })
