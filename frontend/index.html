@@ -83,16 +83,18 @@
             formData.append("name", document.getElementById("name").value);
             formData.append("address", document.getElementById("address").value);
 
-            fetch("http://34.41.210.243:80",
-                  {
+            fetch("http://34.41.210.243/", {
                 method: "POST",
                 body: formData,
             })
-            .then(response => {
-                if (response.ok) {
-                    document.getElementById("message").innerText = "Data entered successfully";
-                } else {
-                    throw new Error("Failed to connect to server");
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    document.getElementById("message").innerText = data.message;
+                    // Optionally reset the form
+                    document.getElementById("uploadForm").reset();
+                } else if (data.error) {
+                    throw new Error(data.error);
                 }
             })
             .catch(error => {
