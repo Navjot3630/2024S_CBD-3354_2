@@ -27,14 +27,18 @@ steps:
     waitFor:
       - 'push-frontend'
 
-  # Step 5: Check if the GKE cluster exists and apply Terraform if needed
+  # Step 5: Extract variables from terraform.tfvars, check if the GKE cluster exists and apply Terraform if needed
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
-      - | 
+      - |
+        # Extract variables from terraform.tfvars
+        export REGION=$(grep '^region' terraform/terraform.tfvars | cut -d '=' -f 2 | tr -d ' "')
+        export CLUSTER_NAME=$(grep '^cluster_name' terraform/terraform.tfvars | cut -d '=' -f 2 | tr -d ' "')
+
         # Check if the cluster exists
-        if gcloud container clusters describe "${_CLUSTER_NAME}" --region "${_REGION}" > /dev/null 2>&1; then
+        if gcloud container clusters describe "$CLUSTER_NAME" --region "$REGION" > /dev/null 2>&1; then
           echo "Cluster already exists."
         else
           echo "Cluster does not exist."
@@ -43,9 +47,9 @@ steps:
           terraform init
           terraform apply -auto-approve
         fi
-        
+
         # Fetch cluster credentials regardless of whether the cluster was just created or already existed
-        gcloud container clusters get-credentials "${_CLUSTER_NAME}" --region "${_REGION}"
+        gcloud container clusters get-credentials "$CLUSTER_NAME" --region "$REGION"
     id: 'check-and-apply'
     waitFor:
       - 'push-backend'
@@ -55,8 +59,8 @@ steps:
     args: ['apply', '-f', 'frontend/deployment.yaml']
     id: 'deploy-frontend'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
     waitFor:
       - 'check-and-apply'
 
@@ -65,8 +69,8 @@ steps:
     args: ['apply', '-f', 'backend/deployment.yaml']
     id: 'deploy-backend'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
     waitFor:
       - 'deploy-frontend'
 
@@ -75,8 +79,8 @@ steps:
     args: ['apply', '-f', 'frontend/service.yaml']
     id: 'expose-frontend-service'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
     waitFor:
       - 'deploy-backend'
 
@@ -85,15 +89,11 @@ steps:
     args: ['apply', '-f', 'backend/service.yaml']
     id: 'expose-backend-service'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
     waitFor:
       - 'expose-frontend-service'
 
 images:
   - 'gcr.io/project897927/frontend:latest'
   - 'gcr.io/project897927/backend:latest'
-
-substitutions:
-  _REGION: 'us-central1'
-  _CLUSTER_NAME: 'chatapp'
