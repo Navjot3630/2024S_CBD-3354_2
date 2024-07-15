@@ -50,7 +50,7 @@ steps:
 
   # Step 6: Apply Terraform configuration if the cluster does not exist
   - name: 'hashicorp/terraform:latest'
-    entrypoint: 'bash'
+    entrypoint: 'sh'
     args:
       - '-c'
       - |
