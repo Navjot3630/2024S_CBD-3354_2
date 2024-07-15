@@ -27,75 +27,33 @@ steps:
     waitFor:
       - 'push-frontend'
 
-  # Step 5: Check if the GKE cluster exists
+  # Step 5: Check if the GKE cluster exists and apply Terraform if needed
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        if gcloud container clusters describe ${_CLUSTER_NAME} --region ${_REGION} > /dev/null 2>&1; then
+        CLUSTER_NAME=${_CLUSTER_NAME}
+        REGION=${_REGION}
+        
+        # Check if the cluster exists
+        if gcloud container clusters describe "$CLUSTER_NAME" --region "$REGION" > /dev/null 2>&1; then
           echo "Cluster already exists."
-          echo "CLUSTER_EXISTS=true" > /workspace/cluster_status.txt
         else
           echo "Cluster does not exist."
-          echo "CLUSTER_EXISTS=false" > /workspace/cluster_status.txt
-        fi
-    id: 'check-cluster'
-
-  # Step 6: Terraform: Initialize Terraform configuration
-  - name: 'hashicorp/terraform:latest'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        source /workspace/cluster_status.txt
-        if [ "$CLUSTER_EXISTS" = "false" ]; then
+          echo "Running Terraform apply."
+          cd terraform
           terraform init
-        else
-          echo "Skipping Terraform init as the cluster already exists."
-        fi
-    dir: './terraform'
-    id: 'terraform-init'
-    waitFor:
-      - 'check-cluster'
-
-  # Step 7: Terraform: Apply Terraform configuration
-  - name: 'hashicorp/terraform:latest'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        source /workspace/cluster_status.txt
-        if [ "$CLUSTER_EXISTS" = "false" ]; then
           terraform apply -auto-approve
-        else
-          echo "Skipping Terraform apply as the cluster already exists."
         fi
-    dir: './terraform'
-    id: 'terraform-apply'
+        
+        # Fetch cluster credentials regardless of whether the cluster was just created or already existed
+        gcloud container clusters get-credentials "$CLUSTER_NAME" --region "$REGION"
+    id: 'check-and-apply'
     waitFor:
-      - 'terraform-init'
+      - 'push-backend'
 
-  # Step 8: Fetch credentials for the GKE cluster
-  - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        source /workspace/cluster_status.txt
-        if [ "$CLUSTER_EXISTS" = "false" ]; then
-          gcloud container clusters get-credentials ${_CLUSTER_NAME} --region ${_REGION}
-        else
-          echo "Cluster already exists, fetching credentials."
-          gcloud container clusters get-credentials ${_CLUSTER_NAME} --region ${_REGION}
-        fi
-    id: 'fetch-gke-credentials'
-    env:
-      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
-    waitFor:
-      - 'terraform-apply'
-
-  # Step 9: Deploy the frontend application to GKE
+  # Step 6: Deploy the frontend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'frontend/deployment.yaml']
     id: 'deploy-frontend'
@@ -103,9 +61,9 @@ steps:
       - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
       - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
-      - 'fetch-gke-credentials'
+      - 'check-and-apply'
 
-  # Step 10: Deploy the backend application to GKE
+  # Step 7: Deploy the backend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'backend/deployment.yaml']
     id: 'deploy-backend'
@@ -115,7 +73,7 @@ steps:
     waitFor:
       - 'deploy-frontend'
 
-  # Step 11: Expose the frontend deployment with a service
+  # Step 8: Expose the frontend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'frontend/service.yaml']
     id: 'expose-frontend-service'
@@ -125,7 +83,7 @@ steps:
     waitFor:
       - 'deploy-backend'
 
-  # Step 12: Expose the backend deployment with a service
+  # Step 9: Expose the backend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'backend/service.yaml']
     id: 'expose-backend-service'
