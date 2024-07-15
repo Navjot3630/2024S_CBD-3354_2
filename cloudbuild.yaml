@@ -65,6 +65,7 @@ steps:
     id: 'terraform-apply'
     waitFor:
       - 'check-cluster'
+    serviceAccount: 'gke-cluster-admin@project897927.iam.gserviceaccount.com'  
 
   # Step 7: Extract cluster credentials
   - name: 'gcr.io/cloud-builders/gcloud'
