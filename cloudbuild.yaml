@@ -55,8 +55,8 @@ steps:
     args: ['apply', '-f', 'frontend/deployment.yaml']
     id: 'deploy-frontend'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
       - 'check-and-apply'
 
@@ -65,8 +65,8 @@ steps:
     args: ['apply', '-f', 'backend/deployment.yaml']
     id: 'deploy-backend'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
       - 'deploy-frontend'
 
@@ -75,8 +75,8 @@ steps:
     args: ['apply', '-f', 'frontend/service.yaml']
     id: 'expose-frontend-service'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
       - 'deploy-backend'
 
@@ -85,8 +85,8 @@ steps:
     args: ['apply', '-f', 'backend/service.yaml']
     id: 'expose-backend-service'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
       - 'expose-frontend-service'
 
@@ -95,5 +95,5 @@ images:
   - 'gcr.io/project897927/backend:latest'
 
 substitutions:
-  REGION: 'us-central1'
-  CLUSTER_NAME: 'chatapp'
+  _REGION: 'us-central1'
+  _CLUSTER_NAME: 'chatapp'
