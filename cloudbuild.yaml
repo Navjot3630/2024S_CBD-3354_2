@@ -47,8 +47,6 @@ steps:
     id: 'check-cluster'
     waitFor:
       - 'push-backend'
-    # Set to fail the build if the cluster does not exist, so the Terraform step runs only if the cluster is missing
-    # A non-zero exit code will skip the subsequent steps if the cluster does not exist.
 
   # Step 6: Apply Terraform configuration if the cluster does not exist
   - name: 'hashicorp/terraform:latest'
@@ -56,14 +54,14 @@ steps:
     args:
       - '-c'
       - |
-        echo "Running Terraform apply."
+        echo "Cluster does not exist. Running Terraform apply."
         cd terraform
         terraform init
         terraform apply -auto-approve
     id: 'terraform-apply'
     waitFor:
       - 'check-cluster'
-    # Only runs if the previous check-cluster step fails (i.e., the cluster does not exist)
+    # Only runs if the `check-cluster` step fails (i.e., the cluster does not exist)
 
   # Step 7: Extract cluster credentials
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -76,7 +74,7 @@ steps:
     waitFor:
       - 'check-cluster'
       - 'terraform-apply'
-    # Runs after both the check-cluster and terraform-apply steps
+    # Runs after the `check-cluster` and `terraform-apply` steps
 
   # Step 8: Deploy the frontend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
