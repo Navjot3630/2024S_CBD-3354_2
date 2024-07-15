@@ -31,7 +31,7 @@ steps:
     waitFor:
       - 'push-frontend'
 
-  # Step 5: Extract variables from terraform.tfvars, check if the GKE cluster exists and apply Terraform if needed
+  # Step 5: Check if the GKE cluster exists
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
@@ -39,21 +39,46 @@ steps:
       - |
         if gcloud container clusters describe "${_CLUSTER_NAME}" --region "${_REGION}" > /dev/null 2>&1; then
           echo "Cluster already exists."
+          exit 0
         else
           echo "Cluster does not exist."
-          echo "Running Terraform apply."
-          cd terraform
-          terraform init
-          terraform apply -auto-approve
+          exit 1
         fi
-
-        # Fetch cluster credentials regardless of whether the cluster was just created or already existed
-        gcloud container clusters get-credentials "${_CLUSTER_NAME}" --region "${_REGION}"
-    id: 'check-and-apply'
+    id: 'check-cluster'
     waitFor:
       - 'push-backend'
+    # Set to fail the build if the cluster does not exist, so the Terraform step runs only if the cluster is missing
+    # A non-zero exit code will skip the subsequent steps if the cluster does not exist.
 
-  # Step 6: Deploy the frontend application to GKE
+  # Step 6: Apply Terraform configuration if the cluster does not exist
+  - name: 'hashicorp/terraform:latest'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Running Terraform apply."
+        cd terraform
+        terraform init
+        terraform apply -auto-approve
+    id: 'terraform-apply'
+    waitFor:
+      - 'check-cluster'
+    # Only runs if the previous check-cluster step fails (i.e., the cluster does not exist)
+
+  # Step 7: Extract cluster credentials
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud container clusters get-credentials "${_CLUSTER_NAME}" --region "${_REGION}"
+    id: 'get-credentials'
+    waitFor:
+      - 'check-cluster'
+      - 'terraform-apply'
+    # Runs after both the check-cluster and terraform-apply steps
+
+  # Step 8: Deploy the frontend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'frontend/deployment.yaml']
     id: 'deploy-frontend'
@@ -61,9 +86,9 @@ steps:
       - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
       - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
-      - 'check-and-apply'
+      - 'get-credentials'
 
-  # Step 7: Deploy the backend application to GKE
+  # Step 9: Deploy the backend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'backend/deployment.yaml']
     id: 'deploy-backend'
@@ -73,7 +98,7 @@ steps:
     waitFor:
       - 'deploy-frontend'
 
-  # Step 8: Expose the frontend deployment with a service
+  # Step 10: Expose the frontend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'frontend/service.yaml']
     id: 'expose-frontend-service'
@@ -83,7 +108,7 @@ steps:
     waitFor:
       - 'deploy-backend'
 
-  # Step 9: Expose the backend deployment with a service
+  # Step 11: Expose the backend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'backend/service.yaml']
     id: 'expose-backend-service'
@@ -95,4 +120,4 @@ steps:
 
 images:
   - 'gcr.io/project897927/frontend:latest'
-  - 'gcr.io/project897927/backend:latest' 
+  - 'gcr.io/project897927/backend:latest'
