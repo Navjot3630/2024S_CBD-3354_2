@@ -1,5 +1,9 @@
 logsBucket: gs://bucket897927
 
+substitutions:
+  _REGION: 'us-central1'  # Default region, can be overridden in the trigger
+  _CLUSTER_NAME: 'my-cluster'  # Default cluster name, can be overridden in the trigger
+
 steps:
   # Step 1: Build Docker image for the frontend
   - name: 'gcr.io/cloud-builders/docker'
@@ -33,7 +37,7 @@ steps:
     args:
       - '-c'
       - |
-        if gcloud container clusters describe "$CLUSTER_NAME" --region "$REGION" > /dev/null 2>&1; then
+        if gcloud container clusters describe "${_CLUSTER_NAME}" --region "${_REGION}" > /dev/null 2>&1; then
           echo "Cluster already exists."
         else
           echo "Cluster does not exist."
@@ -44,7 +48,7 @@ steps:
         fi
 
         # Fetch cluster credentials regardless of whether the cluster was just created or already existed
-        gcloud container clusters get-credentials "$CLUSTER_NAME" --region "$REGION"
+        gcloud container clusters get-credentials "${_CLUSTER_NAME}" --region "${_REGION}"
     id: 'check-and-apply'
     waitFor:
       - 'push-backend'
@@ -54,8 +58,8 @@ steps:
     args: ['apply', '-f', 'frontend/deployment.yaml']
     id: 'deploy-frontend'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
       - 'check-and-apply'
 
@@ -64,8 +68,8 @@ steps:
     args: ['apply', '-f', 'backend/deployment.yaml']
     id: 'deploy-backend'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
       - 'deploy-frontend'
 
@@ -74,8 +78,8 @@ steps:
     args: ['apply', '-f', 'frontend/service.yaml']
     id: 'expose-frontend-service'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
       - 'deploy-backend'
 
@@ -84,8 +88,8 @@ steps:
     args: ['apply', '-f', 'backend/service.yaml']
     id: 'expose-backend-service'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
       - 'expose-frontend-service'
 
