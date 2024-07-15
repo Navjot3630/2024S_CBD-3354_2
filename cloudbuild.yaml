@@ -91,4 +91,4 @@ steps:
 
 images:
   - 'gcr.io/project897927/frontend:latest'
-  - 'gcr.io/project897927/backend:latest'
+  - 'gcr.io/project897927/backend:latest' 
