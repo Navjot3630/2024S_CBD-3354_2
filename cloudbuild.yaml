@@ -39,10 +39,10 @@ steps:
       - |
         if gcloud container clusters describe "${_CLUSTER_NAME}" --region "${_REGION}" > /dev/null 2>&1; then
           echo "Cluster already exists."
-          exit 0
+          echo "CLUSTER_EXISTS=true" > /workspace/cluster_exists.txt
         else
           echo "Cluster does not exist."
-          exit 1
+          echo "CLUSTER_EXISTS=false" > /workspace/cluster_exists.txt
         fi
     id: 'check-cluster'
     waitFor:
@@ -54,18 +54,17 @@ steps:
     args:
       - '-c'
       - |
-        if [ "$$BUILD_STEP_CHECK_CLUSTER_EXIT_STATUS" -ne 0 ]; then
+        if [ "$(cat /workspace/cluster_exists.txt | grep CLUSTER_EXISTS=true)" ]; then
+          echo "Skipping Terraform apply as cluster exists."
+        else
           echo "Cluster does not exist. Running Terraform apply."
           cd terraform
           terraform init
           terraform apply -auto-approve
-        else
-          echo "Skipping Terraform apply as cluster exists."
         fi
     id: 'terraform-apply'
     waitFor:
       - 'check-cluster'
-    # Only runs if the `check-cluster` step fails (i.e., the cluster does not exist)
 
   # Step 7: Extract cluster credentials
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -78,7 +77,6 @@ steps:
     waitFor:
       - 'check-cluster'
       - 'terraform-apply'
-    # Runs after the `check-cluster` and `terraform-apply` steps
 
   # Step 8: Deploy the frontend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
