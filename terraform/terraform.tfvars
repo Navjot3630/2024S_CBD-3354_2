@@ -1,6 +1,6 @@
-project_id = $PROJECT_ID
-region     = $REGION
-cluster_name = $CLUSTER_NAME
-node_count  = $NODE_COUNT
-machine_type = $MACHINE_TYPE
-preemptible  = $PREEMPTIBLE
+project_id = project897927
+region     = us-central1
+cluster_name = chatapp
+node_count  = 3
+machine_type = e2-medium
+preemptible  = true
