@@ -62,6 +62,8 @@ steps:
     waitFor:
       - 'check-cluster'
     # Only runs if the `check-cluster` step fails (i.e., the cluster does not exist)
+    # Add `status` to ensure this step runs only if `check-cluster` exits with status code 1
+    status: 'FAILURE'
 
   # Step 7: Extract cluster credentials
   - name: 'gcr.io/cloud-builders/gcloud'
