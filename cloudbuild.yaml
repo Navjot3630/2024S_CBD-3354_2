@@ -31,12 +31,6 @@ steps:
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
-      - '-c'
-      - |
-        # Extract variables from terraform.tfvars
-        export REGION=$(grep '^region' terraform/terraform.tfvars | cut -d '=' -f 2 | tr -d ' "')
-        export CLUSTER_NAME=$(grep '^cluster_name' terraform/terraform.tfvars | cut -d '=' -f 2 | tr -d ' "')
-
         # Check if the cluster exists
         if gcloud container clusters describe "$CLUSTER_NAME" --region "$REGION" > /dev/null 2>&1; then
           echo "Cluster already exists."
