@@ -31,7 +31,8 @@ steps:
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
-        # Check if the cluster exists
+      - '-c'
+      - |
         if gcloud container clusters describe "$CLUSTER_NAME" --region "$REGION" > /dev/null 2>&1; then
           echo "Cluster already exists."
         else
