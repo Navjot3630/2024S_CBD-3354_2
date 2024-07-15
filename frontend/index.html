@@ -83,7 +83,7 @@
             formData.append("name", document.getElementById("name").value);
             formData.append("address", document.getElementById("address").value);
 
-            fetch("http://34.41.210.243/", {
+            fetch("http://127.0.0.1:5000/", {
                 method: "POST",
                 body: formData,
             })
