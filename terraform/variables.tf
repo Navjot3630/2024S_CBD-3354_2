@@ -12,7 +12,7 @@ variable "region" {
 variable "cluster_name" {
   description = "The name of the GKE cluster"
   type        = string
-  default     = "chatapp"
+  default     = "navicluster"
 }
 
 variable "node_count" {
