@@ -34,7 +34,7 @@ steps:
       - '-c'
       - | 
         # Check if the cluster exists
-        if gcloud container clusters describe "$CLUSTER_NAME" --region "$REGION" > /dev/null 2>&1; then
+        if gcloud container clusters describe "${_CLUSTER_NAME}" --region "${_REGION}" > /dev/null 2>&1; then
           echo "Cluster already exists."
         else
           echo "Cluster does not exist."
@@ -45,7 +45,7 @@ steps:
         fi
         
         # Fetch cluster credentials regardless of whether the cluster was just created or already existed
-        gcloud container clusters get-credentials "$CLUSTER_NAME" --region "$REGION"
+        gcloud container clusters get-credentials "${_CLUSTER_NAME}" --region "${_REGION}"
     id: 'check-and-apply'
     waitFor:
       - 'push-backend'
