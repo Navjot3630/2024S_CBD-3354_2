@@ -1,4 +1,4 @@
-logsBucket: gs://bucket897927 # Replace 'your-logs-bucket' with your actual bucket name
+logsBucket: gs://bucket897927
 
 steps:
   # Step 1: Build Docker image for the frontend
@@ -29,72 +29,66 @@ steps:
 
   # Step 5: Check if the GKE cluster exists
   - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      - 'container'
-      - 'clusters'
-      - 'describe'
-      - '${_CLUSTER_NAME}'
-      - '--region=${_REGION}'
-    id: 'check-cluster'
-    env:
-      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
-    continueAfterSkip: true
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         if gcloud container clusters describe ${_CLUSTER_NAME} --region ${_REGION} > /dev/null 2>&1; then
           echo "Cluster already exists."
-          echo "CLUSTER_EXISTS=true" >> $$
+          echo "CLUSTER_EXISTS=true" > /workspace/cluster_status.txt
         else
           echo "Cluster does not exist."
-          echo "CLUSTER_EXISTS=false" >> $$
+          echo "CLUSTER_EXISTS=false" > /workspace/cluster_status.txt
         fi
+    id: 'check-cluster'
 
   # Step 6: Terraform: Initialize Terraform configuration
   - name: 'hashicorp/terraform:latest'
-    entrypoint: 'terraform'
-    args: ['init']
-    id: 'terraform-init'
-    dir: './terraform'
-    waitFor:
-      - 'check-cluster'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        if [[ "$CLUSTER_EXISTS" == "false" ]]; then
+        source /workspace/cluster_status.txt
+        if [ "$CLUSTER_EXISTS" = "false" ]; then
           terraform init
         else
           echo "Skipping Terraform init as the cluster already exists."
         fi
+    dir: './terraform'
+    id: 'terraform-init'
+    waitFor:
+      - 'check-cluster'
 
   # Step 7: Terraform: Apply Terraform configuration
   - name: 'hashicorp/terraform:latest'
-    entrypoint: 'terraform'
-    args: ['apply', '-auto-approve']
-    id: 'terraform-apply'
-    dir: './terraform'
-    waitFor:
-      - 'terraform-init'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        if [[ "$CLUSTER_EXISTS" == "false" ]]; then
+        source /workspace/cluster_status.txt
+        if [ "$CLUSTER_EXISTS" = "false" ]; then
           terraform apply -auto-approve
         else
           echo "Skipping Terraform apply as the cluster already exists."
         fi
+    dir: './terraform'
+    id: 'terraform-apply'
+    waitFor:
+      - 'terraform-init'
 
   # Step 8: Fetch credentials for the GKE cluster
   - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
     args:
-      - 'container'
-      - 'clusters'
-      - 'get-credentials'
-      - '${_CLUSTER_NAME}'
-      - '--region=${_REGION}'
+      - '-c'
+      - |
+        source /workspace/cluster_status.txt
+        if [ "$CLUSTER_EXISTS" = "false" ]; then
+          gcloud container clusters get-credentials ${_CLUSTER_NAME} --region ${_REGION}
+        else
+          echo "Cluster already exists, fetching credentials."
+          gcloud container clusters get-credentials ${_CLUSTER_NAME} --region ${_REGION}
+        fi
     id: 'fetch-gke-credentials'
     env:
       - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
