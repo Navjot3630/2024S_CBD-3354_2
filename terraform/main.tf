@@ -16,6 +16,9 @@ resource "google_container_cluster" "primary" {
       "https://www.googleapis.com/auth/cloud-platform",
     ]
     service_account = "gke-cluster-admin@project897927.iam.gserviceaccount.com"
+    # Disk size configuration
+    disk_size_gb = 20  # Set disk size to 20 GB
+    disk_type    = "pd-ssd"  # Optional: Specify disk type as SSD
   }
 
   # Enable Network Policy
