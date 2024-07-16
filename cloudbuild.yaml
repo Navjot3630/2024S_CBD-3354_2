@@ -48,35 +48,36 @@ steps:
     waitFor:
       - 'push-backend'
 
-  # Step 6: Fetch the service account key from Secret Manager
+  # Step 6: Get an access token
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        gcloud secrets versions access latest --secret=my-service-account-key > /workspace/service-account-key.json
-    id: 'fetch-key'
+        ACCESS_TOKEN=$(gcloud auth print-access-token)
+        echo $ACCESS_TOKEN > /workspace/access_token.txt
+    id: 'fetch-access-token'
     waitFor:
       - 'check-cluster'
 
   # Step 7: Apply Terraform configuration if the cluster does not exist
-  - name: 'gcr.io/cloud-builders/gcloud'
+  - name: 'hashicorp/terraform:latest'
     entrypoint: 'sh'
     args:
       - '-c'
       - |
-        if [ "$(cat /workspace/cluster_exists.txt | grep CLUSTER_EXISTS=true)" ]; then
+        if grep -q CLUSTER_EXISTS=true /workspace/cluster_exists.txt; then
           echo "Skipping Terraform apply as cluster exists."
         else
           echo "Cluster does not exist. Running Terraform apply."
-          cat /workspace/service-account-key.json
+          export GOOGLE_OAUTH_ACCESS_TOKEN=$(cat /workspace/access_token.txt)
           cd terraform
           terraform init
           terraform apply -auto-approve
         fi
     id: 'terraform-apply'
     waitFor:
-      - 'fetch-key'
+      - 'fetch-access-token'
 
   # Step 8: Extract cluster credentials
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -87,7 +88,6 @@ steps:
         gcloud container clusters get-credentials "${_CLUSTER_NAME}" --region "${_REGION}"
     id: 'get-credentials'
     waitFor:
-      - 'check-cluster'
       - 'terraform-apply'
 
   # Step 9: Deploy the frontend application to GKE
