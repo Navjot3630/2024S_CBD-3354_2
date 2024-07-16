@@ -2,6 +2,10 @@
 
 logsBucket: gs://bucket897927  # The Cloud Storage bucket for build logs
 
+substitutions:
+  _REGION: 'us-central1'  # Default region, can be overridden in the trigger
+  _CLUSTER_NAME: 'navicluster'  # Default cluster name, can be overridden in the trigger
+
 steps:
   # Step 1: Build Docker image for the frontend
   - name: 'gcr.io/cloud-builders/docker'
@@ -29,76 +33,89 @@ steps:
     waitFor:
       - 'push-frontend'
 
-  # Step 5: Apply Terraform configuration and extract outputs
-  - name: 'hashicorp/terraform:latest'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        # Initialize Terraform and apply configuration
-        terraform init
-        terraform apply -auto-approve
-
-        # Extract outputs from Terraform
-        REGION=$(terraform output -raw region)
-        CLUSTER_NAME=$(terraform output -raw cluster_name)
-        echo "REGION=${REGION}" > /workspace/env_vars.txt
-        echo "CLUSTER_NAME=${CLUSTER_NAME}" >> /workspace/env_vars.txt
-    id: 'terraform-apply'
-    waitFor:
-      - 'push-backend'
-
-  # Step 6: Set environment variables for the region and cluster name
+  # Step 5: Check if the GKE cluster exists
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        source /workspace/env_vars.txt
-        gcloud config set compute/region "${REGION}"
-        gcloud config set container/cluster "${CLUSTER_NAME}"
-        gcloud container clusters get-credentials "${CLUSTER_NAME}" --region "${REGION}"
-    id: 'set-env-vars'
+        if gcloud container clusters describe "${_CLUSTER_NAME}" --region "${_REGION}" > /dev/null 2>&1; then
+          echo "Cluster already exists."
+          echo "CLUSTER_EXISTS=true" > /workspace/cluster_exists.txt
+        else
+          echo "Cluster does not exist."
+          echo "CLUSTER_EXISTS=false" > /workspace/cluster_exists.txt
+        fi
+    id: 'check-cluster'
+    waitFor:
+      - 'push-backend'
+
+  # Step 6: Apply Terraform configuration if the cluster does not exist
+  - name: 'hashicorp/terraform:latest'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        if grep -q CLUSTER_EXISTS=true /workspace/cluster_exists.txt; then
+          echo "Skipping Terraform apply as cluster exists."
+        else
+          echo "Cluster does not exist. Running Terraform apply."
+          cd terraform
+          terraform init
+          terraform apply -auto-approve
+        fi
+    id: 'terraform-apply'
+    waitFor:
+      - 'check-cluster'
+
+  # Step 7: Extract cluster credentials
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud container clusters get-credentials "${_CLUSTER_NAME}" --region "${_REGION}"
+    id: 'get-credentials'
     waitFor:
       - 'terraform-apply'
 
-  # Step 7: Deploy the frontend application to GKE
+  # Step 8: Deploy the frontend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'frontend/deployment.yaml']
     id: 'deploy-frontend'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
-      - 'set-env-vars'
+      - 'get-credentials'
 
-  # Step 8: Deploy the backend application to GKE
+  # Step 9: Deploy the backend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'backend/deployment.yaml']
     id: 'deploy-backend'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
       - 'deploy-frontend'
 
-  # Step 9: Expose the frontend deployment with a service
+  # Step 10: Expose the frontend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'frontend/service.yaml']
     id: 'expose-frontend-service'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
       - 'deploy-backend'
 
-  # Step 10: Expose the backend deployment with a service
+  # Step 11: Expose the backend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'backend/service.yaml']
     id: 'expose-backend-service'
     env:
-      - 'CLOUDSDK_COMPUTE_REGION=${REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${CLUSTER_NAME}'
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
       - 'expose-frontend-service'
 
