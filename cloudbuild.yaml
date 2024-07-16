@@ -4,7 +4,7 @@ logsBucket: gs://bucket897927  # The Cloud Storage bucket for build logs
 
 substitutions:
   _REGION: 'us-central1'  # Default region, can be overridden in the trigger
-  _CLUSTER_NAME: 'navicluster'  # Default cluster name, can be overridden in the trigger
+  _CLUSTER_NAME: 'navi'  # Default cluster name, can be overridden in the trigger
 
 steps:
   # Step 1: Build Docker image for the frontend
