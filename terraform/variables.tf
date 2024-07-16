@@ -1,24 +1,24 @@
 variable "project_id" {
-  description = "The project ID to deploy resources into"
-  default     = "project897927"
+  description = "The ID of the GCP project"
+  type        = string
 }
 
 variable "region" {
-  description = "The region to deploy resources into"
-  default     = "us-central1"
+  description = "The region to deploy the GKE cluster"
+  type        = string
 }
 
 variable "cluster_name" {
   description = "The name of the GKE cluster"
-  default     = "navicluster"
+  type        = string
 }
 
 variable "node_count" {
-  description = "The number of nodes in the cluster"
-  default     = 1
+  description = "The number of initial nodes in the cluster"
+  type        = number
 }
 
 variable "machine_type" {
-  description = "The machine type to use for the cluster"
-  default     = "e2-medium"
+  description = "The machine type for the nodes in the cluster"
+  type        = string
 }
