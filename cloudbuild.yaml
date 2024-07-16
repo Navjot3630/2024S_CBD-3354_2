@@ -48,19 +48,7 @@ steps:
     waitFor:
       - 'push-backend'
 
-  # Step 6: Get an access token
-  - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        ACCESS_TOKEN=$(gcloud auth print-access-token)
-        echo $ACCESS_TOKEN > /workspace/access_token.txt
-    id: 'fetch-access-token'
-    waitFor:
-      - 'check-cluster'
-
-  # Step 7: Apply Terraform configuration if the cluster does not exist
+  # Step 6: Apply Terraform configuration if the cluster does not exist
   - name: 'hashicorp/terraform:latest'
     entrypoint: 'sh'
     args:
@@ -70,16 +58,15 @@ steps:
           echo "Skipping Terraform apply as cluster exists."
         else
           echo "Cluster does not exist. Running Terraform apply."
-          export GOOGLE_OAUTH_ACCESS_TOKEN=$(cat /workspace/access_token.txt)
           cd terraform
           terraform init
           terraform apply -auto-approve
         fi
     id: 'terraform-apply'
     waitFor:
-      - 'fetch-access-token'
+      - 'check-cluster'
 
-  # Step 8: Extract cluster credentials
+  # Step 7: Extract cluster credentials
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
@@ -90,7 +77,7 @@ steps:
     waitFor:
       - 'terraform-apply'
 
-  # Step 9: Deploy the frontend application to GKE
+  # Step 8: Deploy the frontend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'frontend/deployment.yaml']
     id: 'deploy-frontend'
@@ -100,7 +87,7 @@ steps:
     waitFor:
       - 'get-credentials'
 
-  # Step 10: Deploy the backend application to GKE
+  # Step 9: Deploy the backend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'backend/deployment.yaml']
     id: 'deploy-backend'
@@ -110,7 +97,7 @@ steps:
     waitFor:
       - 'deploy-frontend'
 
-  # Step 11: Expose the frontend deployment with a service
+  # Step 10: Expose the frontend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'frontend/service.yaml']
     id: 'expose-frontend-service'
@@ -120,7 +107,7 @@ steps:
     waitFor:
       - 'deploy-backend'
 
-  # Step 12: Expose the backend deployment with a service
+  # Step 11: Expose the backend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
     args: ['apply', '-f', 'backend/service.yaml']
     id: 'expose-backend-service'
