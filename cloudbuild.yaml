@@ -60,7 +60,7 @@ steps:
       - 'check-cluster'
 
   # Step 7: Apply Terraform configuration if the cluster does not exist
-  - name: 'hashicorp/terraform:latest'
+  - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'sh'
     args:
       - '-c'
