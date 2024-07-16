@@ -69,7 +69,7 @@ steps:
           echo "Skipping Terraform apply as cluster exists."
         else
           echo "Cluster does not exist. Running Terraform apply."
-          export GOOGLE_APPLICATION_CREDENTIALS=/workspace/service-account-key.json
+          cat /workspace/service-account-key.json
           echo $GOOGLE_APPLICATION_CREDENTIALS
           cd terraform
           terraform init
