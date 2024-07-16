@@ -1,6 +1,7 @@
 provider "google" {
   project = var.project_id
   region  = var.region
+  # No serviceAccount field here
 }
 
 resource "google_container_cluster" "primary" {
@@ -16,7 +17,9 @@ resource "google_container_cluster" "primary" {
     service_account = "gke-cluster-admin@project897927.iam.gserviceaccount.com"
   }
 
-  autoscaling {
+  # Enable Autopilot Mode or configure Node Pool Autoscaling
+  node_autoscaling {
+    enabled = true
     min_node_count = 1
     max_node_count = 5
   }
