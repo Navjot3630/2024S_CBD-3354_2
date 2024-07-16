@@ -70,6 +70,8 @@ steps:
         else
           echo "Cluster does not exist. Running Terraform apply."
           export GOOGLE_APPLICATION_CREDENTIALS=/workspace/service-account-key.json
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+          
           cd terraform
           terraform init
           terraform apply -auto-approve
