@@ -1,7 +1,6 @@
 provider "google" {
   project = var.project_id
   region  = var.region
-  credentials = file("/workspace/service-account-key.json")
 }
 
 resource "google_container_cluster" "primary" {
