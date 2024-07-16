@@ -1,7 +1,7 @@
 provider "google" {
   project = var.project_id
   region  = var.region
-  # Added credentials field for best practice
+  # Optional: Add credentials for best practice
   # credentials = file("<PATH_TO_YOUR_SERVICE_ACCOUNT_KEY_JSON>")
 }
 
@@ -18,30 +18,40 @@ resource "google_container_cluster" "primary" {
     service_account = "gke-cluster-admin@project897927.iam.gserviceaccount.com"
   }
 
-  # Enable Autopilot Mode or configure Node Pool Autoscaling
-  # Uncomment one of the following blocks based on your requirement
-
-  # For Autopilot Mode
-  # autopilot {
-  #   enabled = true
-  # }
-
-  # For Standard Mode with Node Pool Autoscaling
-  node_autoscaling {
-    enabled = true
-    min_node_count = 1
-    max_node_count = 5
-  }
-
+  # Enable Network Policy
   network_policy {
     enabled = true
   }
 
   # Optional: Configure master version
   # master_version = var.master_version
-
-  # Optional: Enable network policy
-  # network_policy {
-  #   provider = "CALICO"
-  # }
 }
+
+resource "google_container_node_pool" "primary_nodes" {
+  name               = "${google_container_cluster.primary.name}-nodes"
+  location           = var.region
+  cluster            = google_container_cluster.primary.name
+  node_count         = var.node_count
+
+  node_config {
+    machine_type = var.machine_type
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+    ]
+    service_account = "gke-cluster-admin@project897927.iam.gserviceaccount.com"
+  }
+
+  # Enable Node Pool Autoscaling
+  autoscaling {
+    min_node_count = 1
+    max_node_count = 5
+  }
+}
+
+# Optional: Add network policy provider
+# resource "google_container_cluster" "primary" {
+#   ...
+#   network_policy {
+#     provider = "CALICO"
+#   }
+# }
