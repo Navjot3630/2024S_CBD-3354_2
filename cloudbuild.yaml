@@ -3,8 +3,8 @@
 logsBucket: gs://bucket897927  # The Cloud Storage bucket for build logs
 
 substitutions:
-  _REGION: '$(REGION)'  # Placeholder for region, to be replaced by pipeline variables
-  _CLUSTER_NAME: '$(CLUSTER_NAME)'  # Placeholder for cluster name, to be replaced by pipeline variables
+  _REGION: ''  # Placeholder for region
+  _CLUSTER_NAME: ''  # Placeholder for cluster name
 
 steps:
   # Step 1: Build Docker image for the frontend
@@ -46,9 +46,11 @@ steps:
         # Extract outputs from Terraform
         REGION=$(terraform output -raw region)
         CLUSTER_NAME=$(terraform output -raw cluster_name)
-        echo "REGION=${REGION}" > /workspace/env_vars.txt
-        echo "CLUSTER_NAME=${CLUSTER_NAME}" >> /workspace/env_vars.txt
+        echo "REGION=${REGION}" >> $BUILD_ENV_FILE
+        echo "CLUSTER_NAME=${CLUSTER_NAME}" >> $BUILD_ENV_FILE
     id: 'terraform-apply'
+    env:
+      - 'BUILD_ENV_FILE=/workspace/env_vars.txt'
     waitFor:
       - 'push-backend'
 
