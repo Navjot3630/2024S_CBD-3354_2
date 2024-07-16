@@ -2,10 +2,6 @@
 
 logsBucket: gs://bucket897927  # The Cloud Storage bucket for build logs
 
-substitutions:
-  _REGION: 'northamerica-northeast1'  # Default region, will be set dynamically
-  _CLUSTER_NAME: 'navicluster'  # Default cluster name, will be set dynamically
-
 steps:
   # Step 1: Build Docker image for the frontend
   - name: 'gcr.io/cloud-builders/docker'
@@ -49,8 +45,6 @@ steps:
         echo "REGION=${REGION}" > /workspace/env_vars.txt
         echo "CLUSTER_NAME=${CLUSTER_NAME}" >> /workspace/env_vars.txt
     id: 'terraform-apply'
-    env:
-      - 'BUILD_ENV_FILE=/workspace/env_vars.txt'
     waitFor:
       - 'push-backend'
 
