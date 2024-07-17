@@ -79,19 +79,38 @@ steps:
     waitFor:
       - 'terraform-apply'
 
-  # Step 8: Deploy the frontend application to GKE
+  # Step 8: Create namespaces for frontend and backend
   - name: 'gcr.io/cloud-builders/kubectl'
-    args: ['apply', '-f', 'frontend/deployment.yaml']
+    args:
+      - 'create'
+      - 'namespace'
+      - 'frontend'
+    id: 'create-frontend-namespace'
+    waitFor:
+      - 'get-credentials'
+
+  - name: 'gcr.io/cloud-builders/kubectl'
+    args:
+      - 'create'
+      - 'namespace'
+      - 'backend'
+    id: 'create-backend-namespace'
+    waitFor:
+      - 'create-frontend-namespace'
+
+  # Step 9: Deploy the frontend application to GKE
+  - name: 'gcr.io/cloud-builders/kubectl'
+    args: ['apply', '-f', 'frontend/deployment.yaml', '-n', 'frontend']
     id: 'deploy-frontend'
     env:
       - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
       - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
     waitFor:
-      - 'get-credentials'
+      - 'create-backend-namespace'
 
-  # Step 9: Deploy the backend application to GKE
+  # Step 10: Deploy the backend application to GKE
   - name: 'gcr.io/cloud-builders/kubectl'
-    args: ['apply', '-f', 'backend/deployment.yaml']
+    args: ['apply', '-f', 'backend/deployment.yaml', '-n', 'backend']
     id: 'deploy-backend'
     env:
       - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
@@ -99,9 +118,9 @@ steps:
     waitFor:
       - 'deploy-frontend'
 
-  # Step 10: Expose the frontend deployment with a service
+  # Step 11: Expose the frontend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
-    args: ['apply', '-f', 'frontend/service.yaml']
+    args: ['apply', '-f', 'frontend/service.yaml', '-n', 'frontend']
     id: 'expose-frontend-service'
     env:
       - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
@@ -109,9 +128,9 @@ steps:
     waitFor:
       - 'deploy-backend'
 
-  # Step 11: Expose the backend deployment with a service
+  # Step 12: Expose the backend deployment with a service
   - name: 'gcr.io/cloud-builders/kubectl'
-    args: ['apply', '-f', 'backend/service.yaml']
+    args: ['apply', '-f', 'backend/service.yaml', '-n', 'backend']
     id: 'expose-backend-service'
     env:
       - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
