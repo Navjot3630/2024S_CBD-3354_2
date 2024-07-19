@@ -98,6 +98,9 @@ steps:
       - 'namespace'
       - 'backend'
     id: 'create-backend-namespace'
+    env:
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'  
     waitFor:
       - 'create-frontend-namespace'
 
