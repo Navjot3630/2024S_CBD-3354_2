@@ -86,6 +86,9 @@ steps:
       - 'namespace'
       - 'frontend'
     id: 'create-frontend-namespace'
+    env:
+      - 'CLOUDSDK_COMPUTE_REGION=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}' 
     waitFor:
       - 'get-credentials'
 
