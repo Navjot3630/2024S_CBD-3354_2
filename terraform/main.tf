@@ -42,3 +42,4 @@ resource "google_container_node_pool" "primary_nodes" {
     ]
     service_account = "gke-cluster-admin@${var.project_id}.iam.gserviceaccount.com"
   }
+}
